@@ -37,16 +37,6 @@
             border: 5px solid black;
             border-radius: 10px;
         }
-        button {
-            margin-top: 10px;
-            padding: 10px 20px;
-            font-size: 1rem;
-            cursor: pointer;
-            border: none;
-            background-color: black;
-            color: white;
-            border-radius: 5px;
-        }
         #caption {
             font-size: 1.2rem;
             font-weight: bold;
@@ -56,12 +46,10 @@
 </head>
 <body>
     <h1>Kryptonite Meme Generator</h1>
-    <button id="startButton">Start Meme Generator</button>
     <div class="meme-container" id="memeContainer">
         <img id="meme" src="https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg" alt="Meme Not Available">
         <p id="caption"></p>
     </div>
-    <button id="captureButton" style="display:none;">Capture Meme</button>
     
     <script>
         let memeList = [];
@@ -88,18 +76,13 @@
                 memeIndex = 0;
             } catch (error) {
                 console.error("Error fetching memes:", error);
-                document.getElementById("startButton").innerText = "Retry: No Memes Found";
                 return;
             }
 
             if (memeList.length > 0) {
-                document.getElementById("startButton").style.display = "none";
-                document.getElementById("captureButton").style.display = "inline-block";
                 showMeme();
-                setInterval(showMeme, 5000);
-                setInterval(fetchMemes, 10000);
-            } else {
-                document.getElementById("startButton").innerText = "Retry: No Memes Found";
+                setInterval(showMeme, 8000);
+                setInterval(fetchMemes, 30000);
             }
         }
 
@@ -114,20 +97,7 @@
             }
         }
 
-        document.getElementById("startButton").addEventListener("click", async function () {
-            this.innerText = "Loading memes...";
-            await fetchMemes();
-        });
-
-        document.getElementById("captureButton").addEventListener("click", function () {
-            let memeContainer = document.getElementById("memeContainer");
-            html2canvas(memeContainer).then(canvas => {
-                let link = document.createElement("a");
-                link.href = canvas.toDataURL("image/png");
-                link.download = "meme.png";
-                link.click();
-            });
-        });
+        fetchMemes();
     </script>
 </body>
 </html>
