@@ -6,28 +6,21 @@
     <title>Kryptonite Meme Generator</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Zen+Kurenaido&display=swap');
-
         body {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100vh;
-            background-image: url('https://wallpapercave.com/wp/wp5591129.jpg'); /* Traditional Japanese Background */
-            background-size: cover;
-            background-position: center;
-            color: white;
-            font-family: 'Zen Kurenaido', sans-serif;
+            background-color: #f4f4f4;
+            color: black;
+            font-family: Arial, sans-serif;
             text-align: center;
+            overflow: hidden;
         }
         h1 {
-            font-size: 2.5rem;
+            font-size: 2rem;
             font-weight: bold;
-            text-shadow: 3px 3px 5px black;
-            background: rgba(0, 0, 0, 0.6);
-            padding: 10px 20px;
-            border-radius: 10px;
         }
         .meme-container {
             display: flex;
@@ -35,153 +28,107 @@
             align-items: center;
             justify-content: center;
             width: 80%;
-            height: 60vh;
+            height: 80vh;
             margin-top: 20px;
             position: relative;
-            background: rgba(0, 0, 0, 0.7);
-            border: 10px solid #8B4513;
-            border-image: url('https://upload.wikimedia.org/wikipedia/commons/6/68/Bamboo.png') 30;
-            padding: 10px;
-            border-radius: 15px;
-            transition: opacity 0.5s ease-in-out;
-        }
-        .roof {
-            width: 100%;
-            height: 80px;
-            background: url('https://i.imgur.com/jhT8q8p.png') center/contain no-repeat;
-            position: absolute;
-            top: -70px;
+            transition: transform 0.3s ease-in-out;
         }
         img {
             max-width: 90%;
-            max-height: 50vh;
-            border: 5px solid #FFD700;
+            max-height: 60vh;
+            border: 5px solid black;
             border-radius: 10px;
-        }
-        button {
-            margin-top: 15px;
-            padding: 12px 25px;
-            font-size: 1.2rem;
-            cursor: pointer;
-            border: none;
-            background-color: #B22222;
-            color: white;
-            border-radius: 10px;
-            font-weight: bold;
-            transition: 0.3s ease-in-out;
-        }
-        button:hover {
-            background-color: #8B0000;
-            transform: scale(1.1);
         }
         #caption {
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             font-weight: bold;
-            margin-top: 15px;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 10px;
-            border-radius: 10px;
+            margin-top: 10px;
+        }
+        #meme-coins {
+            margin-top: 10px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: red;
         }
     </style>
 </head>
 <body>
-    <h1>⚔️ Kryptonite Meme Generator ⚔️</h1>
-    <button id="startButton">🎋 Start Meme Generator</button>
+    <h1>Kryptonite Meme Generator</h1>
+    <div id="meme-coins">Meme Coins: 20</div>
     <div class="meme-container" id="memeContainer">
-        <div class="roof"></div>
         <img id="meme" src="https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg" alt="Meme Not Available">
         <p id="caption"></p>
     </div>
-    <button id="getNewMemeButton" style="display:none;">🔄 Get New Meme</button>
-    <button id="captureButton" style="display:none;">📸 Capture Meme</button>
-
+    
     <script>
-        let memeList = [];
-        let memeIndex = 0;
+        let memeHistory = [];
+        let memeIndex = -1;
+        let startY = 0;
+        let memeCoins = 20;
         const safePlaceholder = "https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg";
         const trustedDomains = ["i.redd.it", "i.imgur.com", "preview.redd.it", "meme-api.com"];
-        const displayedMemes = new Set();
 
-        async function fetchMemes() {
-            console.log("Fetching memes...");
+        function updateMemeCoins() {
+            document.getElementById("meme-coins").textContent = `Meme Coins: ${memeCoins}`;
+        }
+
+        async function fetchNewMeme() {
+            if (memeCoins <= 0) {
+                alert("Out of meme coins! Come back tomorrow for more.");
+                return;
+            }
+            memeCoins--;
+            updateMemeCoins();
+
             try {
-                let response = await fetch("https://meme-api.com/gimme/10");
+                let response = await fetch("https://meme-api.com/gimme/1");
                 let data = await response.json();
-
-                if (!data || !data.memes || data.memes.length === 0) {
-                    throw new Error("No memes found in API response.");
+                
+                if (data.memes && data.memes.length > 0) {
+                    let meme = data.memes[0];
+                    if (trustedDomains.some(domain => meme.url.includes(domain))) {
+                        memeHistory.push({ url: meme.url, title: meme.title });
+                        memeIndex++;
+                        showMeme();
+                    }
                 }
-
-                let newMemes = data.memes.filter(m => 
-                    trustedDomains.some(domain => m.url.includes(domain)) &&
-                    !displayedMemes.has(m.url)
-                ).map(m => ({ url: m.url, title: m.title }));
-
-                if (newMemes.length === 0) {
-                    console.warn("No new memes available.");
-                    return;
-                }
-
-                memeList = newMemes;
-                memeIndex = 0;
-                console.log("Memes fetched:", memeList);
-                showMeme();
             } catch (error) {
-                console.error("Error fetching memes:", error);
-                document.getElementById("startButton").innerText = "Retry: No Memes Found";
+                console.error("Error fetching meme:", error);
             }
         }
 
         function showMeme() {
-            if (memeList.length > 0) {
-                const memeData = memeList[memeIndex];
-                console.log("Displaying meme:", memeData);
-
-                let memeContainer = document.getElementById("memeContainer");
-                let memeImage = document.getElementById("meme");
-                let memeCaption = document.getElementById("caption");
-
-                memeContainer.style.opacity = "0"; // Fade out effect
-                setTimeout(() => {
-                    memeImage.src = memeData.url;
-                    memeImage.alt = "Funny meme";
-                    memeCaption.textContent = memeData.title;
-
-                    displayedMemes.add(memeData.url);
-                    memeIndex = (memeIndex + 1) % memeList.length;
-                    memeContainer.style.opacity = "1"; // Fade in effect
-                }, 500);
+            if (memeIndex >= 0 && memeIndex < memeHistory.length) {
+                document.getElementById("meme").src = memeHistory[memeIndex].url;
+                document.getElementById("caption").textContent = memeHistory[memeIndex].title;
             } else {
-                console.warn("Meme list is empty, showing placeholder.");
                 document.getElementById("meme").src = safePlaceholder;
                 document.getElementById("caption").textContent = "Meme Not Available";
             }
         }
 
-        document.getElementById("startButton").addEventListener("click", async function () {
-            this.innerText = "Loading memes...";
-            await fetchMemes();
-            this.style.display = "none";
-            document.getElementById("getNewMemeButton").style.display = "inline-block";
-            document.getElementById("captureButton").style.display = "inline-block";
-            setInterval(showMeme, 10000);
-            setInterval(fetchMemes, 30000);
+        document.addEventListener("touchstart", function (e) {
+            startY = e.touches[0].clientY;
         });
 
-        document.getElementById("getNewMemeButton").addEventListener("click", function () {
-            console.log("Fetching a new meme...");
-            fetchMemes();
+        document.addEventListener("touchend", function (e) {
+            let endY = e.changedTouches[0].clientY;
+            let diff = startY - endY;
+
+            if (diff > 50) {
+                if (memeIndex === memeHistory.length - 1) {
+                    fetchNewMeme();
+                } else {
+                    memeIndex++;
+                    showMeme();
+                }
+            } else if (diff < -50 && memeIndex > 0) {
+                memeIndex--;
+                showMeme();
+            }
         });
 
-        document.getElementById("captureButton").addEventListener("click", function () {
-            let memeContainer = document.getElementById("memeContainer");
-            html2canvas(memeContainer).then(canvas => {
-                let link = document.createElement("a");
-                link.href = canvas.toDataURL("image/png");
-                link.download = "meme.png";
-                link.click();
-            });
-        });
+        fetchNewMeme();
     </script>
 </body>
 </html>
